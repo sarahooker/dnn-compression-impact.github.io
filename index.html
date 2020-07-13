@@ -1,0 +1,2034 @@
+<!doctype html>
+<html>
+<head>
+  <title>PIE: Pruning Identified Exemplars</title> 
+  <!-- Twitter Card data -->
+  <meta name="twitter:card" value="summary">
+  <meta name="twitter:title" content="Selective Brain Damage">
+  <meta name="twitter:description" content="What do pruned deep neural networks forget?">
+  <meta name="twitter:url" content="https://weightpruningdamage.github.io/">
+  <meta name="twitter:image" content="https://cdn.glitch.com/02868eea-fe84-443e-964a-8f04885fa5fa%2Faccuracy_distribution_updated.png?v=1574118491306">
+  <meta name="twitter:site" content="@googleai" />
+  
+  <meta property="og:image:width" content="1920" />
+  <meta property="og:image:height" content="1080" />
+  <meta property="og:title" content="Selective Brain Damage" />
+  <meta property="og:type" content="article" />
+  <meta property="og:description" content="What do pruned deep neural networks forget?" />
+  <meta property="og:image" content="https://cdn.glitch.com/02868eea-fe84-443e-964a-8f04885fa5fa%2Faccuracy_distribution.png?v=1574118354833" />
+  <meta property="og:url" content="https://weightpruningdamage.github.io/" />
+  <meta property="og:site_name" content="Deep Neural Network Pruning">
+  <meta property="og:locale" content="en_US">
+  
+  
+  <!--  https://scholar.google.com/intl/en/scholar/inclusion.html#indexing -->
+  <meta name="citation_title" content="Selective Brain Damage: Measuring the Disparate Impact of Model Pruning">
+  <meta name="citation_fulltext_html_url" content="https://weightpruningdamage.github.io/">
+   <meta name="citation_pdf_url" content="https://arxiv.org/abs/1911.05248">
+  <meta name="citation_fulltext_world_readable" content="">
+  <meta name="citation_author" content="Hooker, Sara">
+  <meta name="citation_author_institution" content="Google Brain">
+  <meta name="citation_author" content="Courville, Aaron">
+  <meta name="citation_author_institution" content="MILA">
+  <meta name="citation_author" content="Dauphin, Yann">
+  <meta name="citation_author_institution" content="Google Brain">
+  <meta name="citation_author" content="Frome, Andrea">
+  <meta name="citation_author_institution" content="Google Brain">
+  <meta name="citation_publication_date" content="2019/11/13">
+  
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-152824096-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-152824096-1');
+</script>
+
+  <!--  https://schema.org/Article -->
+  <meta property="description" itemprop="description" content="Measuring the disparate impact of model pruning on classes and individual images.">
+  <meta property="article:author" content="Sara Hooker">
+  <meta property="article:author" content="Yann Dauphin">
+  <meta property="article:author" content="Aaron Courville">
+  <meta property="article:author" content="Andrea Frome">
+  <meta property="article:url" content="https://weightpruningdamage.github.io/" />
+  <link href="https://fonts.googleapis.com/css?family=Roboto:300,400" rel="stylesheet">
+  <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+  <style>
+     body {
+      font-family: "Roboto", "Helvetica", sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      font-size: 12px;
+    }
+    html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+    table td {
+      font-size: 12px;
+      text-align: center;
+      outline: 1px solid white;
+      padding: 0;
+      margin: 0;
+    }
+    table.inner td {
+      padding: 0;
+      margin: 0;
+      border: 0;
+      width: 25%;
+    }
+    .footer-row {
+      height: 15px;
+    }
+    table.inner tr {
+      border: 0;
+    }
+    table.inner th {
+      padding: 8px;
+    }
+    table th {
+      font-size: 11px;
+    }
+    table {
+      border-collapse: collapse;
+      border-spacing: 0;
+    }
+    thead, tbody { display: block; }
+    .rotated {
+      transform: rotate(90deg);
+      transform-origin: left bottom 0;
+      margin-top: -111px;
+      font-weight: bold;
+      font-size: 1.2em;
+      padding: 8px;
+    }
+    #headers {
+      z-index: 1000;
+      background-color: white;
+      height: 65px;
+      vertical-align: middle;
+      border-bottom: 1px solid #ccc;
+      margin-bottom: 10px;
+    }
+    #headers span {
+      background-color: white;
+      display: inline-block;
+      line-height: 65px;
+      font-size: 1.2em;
+      font-weight: bold;
+      text-align: center;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .cover {
+      background: #1e283a;
+    }
+    .cover-container {
+      padding-top: 10px;
+      padding-bottom: 60px;
+    }
+    .descriptions_, .description_ {
+      padding-top: 20px;
+    }
+    .cover-container, .descriptions_, .description_ {
+      padding-right: 5px;
+      padding-left: 5px;
+      margin-right: auto;
+      margin-left: auto;   
+    }
+  
+    
+  
+    @media (min-width: 415px) {
+      authors .authors-affiliations,
+       .base-grid, .imgs-container
+      .cover-container, .descriptions_, .description_, .column_portfolio, .column_portfolio_,  .column_portfolio, .column_portfoliofinal {
+        width: 500px;
+      }
+      .column_portfolio_  .column_portfolio_final .column_portfolio figcaption, .column_portfolio_,  .column_portfolio, .column_portfoliofinal {
+        padding: 0;
+        padding-top: 4px;
+        word-wrap: break-word;
+        word-break: break-word;
+      }
+    }
+    @media (min-width: 768px) {
+      authors .authors-affiliations, .imgs-container, 
+      .cover-container, .descriptions_, .description_, .column_portfolio, .column_portfolio_  .column_portfolio .column_portfoliofinal {
+        width: 650px;
+      }
+    }
+    @media (min-width: 992px) {
+      authors .authors-affiliations, .imgs-container, 
+      .cover-container, .descriptions_, .description_, .column_portfolio, .column_portfolio_,  .column_portfolio, .column_portfoliofinal  {
+        width: 770px;
+      }
+    }
+    @media (min-width: 1200px) {
+      authors .authors-affiliations, .imgs-container, 
+      .cover-container, .descriptions_, .description_, .column_portfolio, .column_portfolio_,  .column_portfolio, .column_portfoliofinal {
+        width: 970px;
+      }
+    }
+    .cover h1 {
+      font-family: "Roboto", "Gotham A", "Gotham B";
+      letter-spacing: 0.05em;
+      font-size: 63px;
+      font-weight: 700;
+      margin-bottom: 0.5em;
+      text-transform: uppercase;
+    }
+    .cover h3 {
+      font-size: 30px;
+      letter-spacing: 0.05em;
+      font-weight: 500;
+    }
+    .descriptions_ h3 {
+      color: #313b4e;
+      opacity: .8;
+    }
+    
+    .descriptions_ p {
+      color: #313b4e;
+      opacity: .8;
+      font-size: 16px;
+    }
+    .cover {
+      color: #ddd;
+    }
+    
+    .authors {
+      margin-top: -40px;
+      overflow: hidden;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    font-size: 1.5rem;
+    line-height: 1.8em;
+    padding: 1.5rem 0;
+    min-height: 1.8em;
+    }
+    
+    .subtitle {
+      margin-top: -20px;
+    }
+    .icons {
+      margin-top: 30px;
+      padding-left: 4px;
+    }
+    .icons a {
+      display: inline-block;
+      font-size: 16px;
+      color: #ccc;
+      text-decoration: none;
+    }
+    .paper-icon {
+      display: inline-block;
+    }
+    .paper-icon a {
+      line-height: 35px;
+      vertical-align: top;
+    }
+    .paper-icon:hover a {
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .description_ p {
+      width: 100%;
+      font-size: 16px;
+    }
+    .description_ img {
+      vertical-align: middle;
+      width: 100%;
+    }
+    .imgs-container {
+      display: table-row;
+    }
+    .img-container {
+      color: #62779c;
+      text-align: center;
+      font-weight: bold;
+      font-size: 14px;
+      padding-right: 6px;
+      display: table-cell;
+      width: 33%;
+    }
+    #headers.fixed-header {
+      position: fixed;
+      top: 0;
+    }
+    #table-container.fixed-header {
+      margin-top: 106px;
+    }
+    .image-label {
+      font-size: 15px;
+      text-align: left;
+      padding-bottom: 4px;
+      padding-top: 6px;
+      padding-left: 2px;
+      font-weight: normal;
+    }
+    .img-times-selector-container {
+      margin-left: -80px;
+      margin-top: -45px;
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+     }
+    .img-times-selector {
+      width: 175px;
+    }
+    #table {
+      margin-top: 0px;
+      width: 100%;
+    }
+    
+* {
+  box-sizing: border-box;
+}
+/* Center website */
+.row {
+  margin: 8px -16px;
+}
+/* Add padding BETWEEN each column (if you want) */
+.row,
+.row > .column_portfolio {
+  padding: 3px;
+}
+/* Create three equal columns that floats next to each other */
+.column_portfolio {
+  float: left;
+  width: 33.33%;
+  display: none; /* Hide columns by default */
+}
+    
+.column_portfolio_  .column_portfolio .column_portfoliofinal figcaption {
+      padding: 4px 8px;
+     word-wrap: break-all;
+      word-break: break-all;
+  }
+    
+/* Create three equal columns that floats next to each other */
+.column_portfolio_ {
+  float: left;
+  width: 25.00%;
+  display: none; /* Hide columns by default */
+}
+    
+.column_portfoliofinal {
+  float: left;
+  width: 100.00%;
+  display: none; /* Hide columns by default */
+}
+    
+.column_portfoliofinalfinal {
+  float: left;
+  width: 25.00%;
+  display: none; /* Hide columns by default */
+}
+.column_header {
+  float: left;
+  width: 100.00%;
+  display: none; /* Hide columns by default */
+}
+    
+.column_header_ {
+  float: left;
+  width: 100.00%;
+  display: none; /* Hide columns by default */
+}
+    
+.column_headerfinal {
+  float: left;
+  width: 100.00%;
+  display: none; /* Hide columns by default */
+}
+    
+.column_headerfinalfinal {
+  float: left;
+  width: 100.00%;
+  display: none; /* Hide columns by default */
+}
+  
+    
+.column_two_fig {
+  float: left;
+  width: 50.00%;
+  display: none; /* Hide columns by default */
+}
+/* Clear floats after rows */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+/* Content */
+.content {
+  background-color: white;
+  padding: 10px;
+  width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+}
+	  
+.content_reduced {
+  background-color: white;
+  padding: 10px;
+  width: 70%;
+  margin-left: auto;
+  margin-right: auto;
+}
+    
+.content_reduced_slightly {
+  background-color: white;
+  padding: 2px;
+  width: 50%;
+  margin-left: auto;
+  margin-right: auto;
+}
+    
+.content_resized {
+  background-color: white;
+  padding: 2px;
+  width: 50%;
+  margin-left: auto;
+  margin-right: auto;
+}
+/* The "show" class is added to the filtered elements */
+.show {
+  display: block;
+}
+/* Style the buttons */
+.btn {
+  border: none;
+  border-radius: 4px;
+  outline: none;
+  padding: 12px 16px;
+  font-size: 14px;
+  background-color:#599bb3;
+  color:#ffffff;
+  background:linear-gradient(to bottom, #599bb3 5%, #408c99 100%);
+  text-shadow:0px 1px 0px #3d768a;
+  margin-right: auto;
+  margin-left: auto;  
+   margin-bottom:5px;
+  cursor:pointer;
+}
+/* Add a grey background color on mouse-over */
+.btn:hover {
+  background-color: #ddd;
+}
+/* Add a dark background color to the active button */
+.btn.active_1, .btn.active_2, .btn.active_3, .btn.active_4, .btn:target
+{ background:linear-gradient(to right, #666 3%, #666  100%);
+  color: white;
+  cursor:none;
+}
+    
+figcaption,
+.figcaption {
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 14px;
+   font-weight: bold;
+  line-height: 1.5em;
+}
+    
+figcaption a {
+  color: rgba(0, 0, 0, 0.6);
+}
+figcaption b,
+figcaption .strong_, {
+  font-weight: bold;
+  font-size: 14px;
+  color: #180A3E;
+}
+    
+</style>
+</head>
+<body>
+  <div id="scroll-container">
+    <div class="cover">
+      <div class="cover-container">
+        <div class="icons">
+          <div class="paper-icon">
+            <a href="https://arxiv.org/abs/1911.05248">
+              <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2Fpaper_icon.png?v=1572561063939" style="width: 100px"/><br>Paper
+            </a>
+          </div>
+          <div class="paper-icon" style="margin-left: 20px">
+            <a href="https://github.com/google-research/google-research/tree/master/pruning_identified_exemplars">
+              <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2Fcode_icon.png?v=1572562103868" style="width: 100px"/><br>Code
+            </a>
+          </div>    
+        </div>
+        <div class="title"><h2>Selective Brain Damage: Measuring the Disparate Impact of Model Compression</h2></div>
+        <div class="authors">Sara Hooker, Aaron Courville, Yann Dauphin, Andrea Frome</div>
+      <div class="institutions"></div>
+       </div>
+    </div>
+      <div class="descriptions_">
+	<h3>What is lost when we prune deep neural networks?</h3>
+        </div>
+         <div class="description_">
+          <p>Between infancy and adulthood, the number of synapses in our brain first multiply and then fall. 
+            Synaptic pruning improves efficiency by removing redundant neurons and strengthening synaptic connections 
+            that are most useful for the environment.  
+            Despite losing 50 % of all synapses between age two and ten, the brain continues to function <dt-cite key="RAKI1994"></dt-cite>.
+            The phrase "use it or lose it" is frequently used to describe the environmental influence of the learning process
+            on synaptic  pruning,
+            however there is little scientific 
+            consensus on <em>what</em> exactly is lost <dt-cite key="Sowell8223,CASEY2000241"></dt-cite>.</p>
+            
+           <p>In 1990, a popular paper was published titled <i>Optimal Brain Damage</i> 
+              <dt-cite key="Cun90optimalbrain"></dt-cite>. 
+              The paper was amongst the first  <dt-cite key="Hassibi93secondorder,1992_nowlan_hinton,NIPS1990_Andreas_weight_elimination,Mozer1988"></dt-cite> to propose that deep neural networks could be pruned of "excess capacity" in a similar way 
+              to our biological synaptic pruning. In deep neural networks, weights are pruned or removed by 
+              from the network by setting the value to zero.
+              Today there are many possible pruning methods to chose from, and pruned models likely drive many of the algorithms on your phone.</p>
+	   
+             <p>  At face value, pruning does appear to promise you can can (almost) have it all. 
+               State of art pruning methods remove the 
+               majority of the weights with minimal degradation to top-1 accuracy<dt-cite key="tgale_shooker_2019"></dt-cite>.
+              These newly slimmed down networks require less memory, energy consumption 
+               and are faster at producing predictions. 
+               All these attributes make pruned models ideal for deploying deep neural networks to resource constrained environments.</p>
+                 <div class="content_reduced_slightly">
+     <img src="https://cdn.glitch.com/f1ebd1ee-d1ac-4538-8ad5-0034e332e4ae%2Fsynaptic_pruning_image.png?v=1574277111414" alt="abstract_1" style="width:100%">
+      <div class="figcaption">
+         <strong_>Synaptic pruning removes redundant neurons and strengthens connections that are most useful for the environment. (Figure courtesy of Seeman, 1999)</strong_><br>
+       </div>
+             </div>  
+		 
+		 <p> However, the ability to prune networks with seemingly so little degradation to generalization performance is puzzling. The cost
+              to top-1 accuracy appears minimal 
+              if it is spread uniformally across all classes, but what if the cost is 
+              concentrated in only a few classes? 
+              <i>Are certain types of examples or classes disproportionately impacted by 
+                pruning?</i></p>
+            <p> An understanding of these trade-offs is critical when deep neural networks are used for sensitive tasks such 
+              as hiring <dt-cite key="Dastin_2018,Harwell_2019"></dt-cite>, health care diagnostics <dt-cite key="2019Hongtao,Gruetzemacher20183DDL"></dt-cite> or self-driving cars <dt-cite key="2017Telsa,2019Uber"></dt-cite>. For these tasks, the introduction of pruning may be at odds with fairness objectives 
+              to avoid disparate treatment of protected attributes and/or the need to guarantee a level of recall for certain classes <dt-cite key="2016fair_prediction,2019arXiv190110566Z,NIPS2016_6316,2014certifying_removing_disparate_impact,false_discovery_rates"></dt-cite>. 
+              Pruning is already commonly used in these domains, often driven by the resource constraints of deploying models to mobile phone or embedded devices <dt-cite key="2017Andre"></dt-cite>. </p>
+       <p> In this work, we propose a formal framework to identify the classes and images where there is a high level of disagreement or difference in
+              generalization performance between pruned and non-pruned models.  We find that certain examples, which we term pruning identified exemplars (PIEs), 
+              and classes are systematically more impacted by the introduction of sparsity. </p>
+  <div>
+           
+           <div class="imgs-container">
+        
+            <div class="descriptions_">
+              <p> The primary findings of our work can be summarized as follows: </p>
+
+          <div class="img-container">1. Pruning would be better described as "selective brain damage." Pruning has a non-uniform impact across classes; a fraction of classes are disproportionately and systematically impacted by the introduction of sparsity.</div>
+           <div class="img-container">2. The examples most impacted by pruning, which we term <i>Pruning Identified Exemplars</i> (PIEs), are more challenging for both pruned and non-pruned models to classify.</div>
+          <div class="img-container">3. Pruning significantly reduces robustness to image corruptions and natural adversarial images.</div>
+      </div>
+     </div>
+   
+   <div class="descriptions_">
+  <h3>PIE: Pruning Identified Exemplars</h3>
+     </div>
+   <div class="description_">
+     
+        <p> PIEs are images where the most frequent prediction differs between a population of independently trained pruned and non-pruned models. We focus on open source research datasets such as ImageNet and find that PIE images are more challenging for both pruned and non-pruned models.
+       Restricting the test-set to a random sample of PIE images sharply degrades top-1 accuracy.
+     Removing PIEs from the test-set improves top-1 accuracy for both pruned and non-pruned models.  </p>
+ 
+      <div class="content">
+  <hr>
+     <div class="figcaption">
+         <strong_>PIE images are more challenging for both pruned and non-pruned models to classify.
+           Pruning appears to cause deep neural networks to "forget" the examples where there is already a high level of predictive uncertainty.
+           <br><br>
+           Go ahead and click on the buttons below to view a sample of ImageNet PIEs in each category. 
+      The labels below each image are: 1) true ground truth ImageNet label, 2) baseline non-pruned 
+           modal prediction, 3)  most frequent prediction from a population of pruned ResNet-50 models.</strong_>
+  </div>
+<br>
+<div id="myBtnContainer">
+  <button class="btn active_1" onclick="filterSelection('atypical')"> atypical examples</button>
+  <button class="btn" onclick="filterSelection('fine')"> fine grained</button>
+    <button class="btn" onclick="filterSelection('abstract')"> abstract classes</button>
+<hr>
+</div>
+
+<!-- Portfolio Gallery Grid -->
+      
+<div class="row">
+  <div class="column_header_ abstract">
+     <div class="figcaption">  
+       <code>abstract exemplars:</code>a sample of PIEs where the class object is in an abstract form, such as a painting, drawing or rendering
+        using a different material.
+    </div>
+    </div>
+    <div class="column_header_ fine">
+    <div class="content">
+       <div class="figcaption">  
+      <code>fine grained:</code> a sample of PIEs where the image depicts an object that is semantically close to 
+      various other classes present the data set (e.g.,
+      rock crab and fiddler crab, cuirass and breastplate).
+    </div>
+      </div>
+  </div>
+  
+  <div class="column_header_ atypical">
+    <div class="content">
+    <div class="figcaption">  
+      <code>atypical exemplars:</code> a sample of PIEs where the image would be considered by a human to be an unusual 
+      or outlier example from the distribution of images in a given category.
+       </div> 
+    </div>
+  </div>
+    <!-- END GRID -->
+</div>
+  
+<div class="row">
+  <div class="column_portfolio_ abstract">
+    <div class="content">
+     <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2F38_toilet_tissue_bath_towel_great_white_shark.png?v=1573469368618" alt="abstract_1" style="width:100%">
+      <div class="figcaption">
+        <code>True Label:</code>
+        <strong_>toilet tissue</strong_><br>
+        <code>Non-Pruned:</code><strong_>bath towel</strong_><br>
+        <code>Pruned:</code><br><strong_>great white shark</strong_>
+         </div>
+    </div>
+  </div>
+  <div class="column_portfolio_ abstract">
+    <div class="content">
+    <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2F29_cauliflower_cauliflower_artichoke.png?v=1573469365213" alt="abstract_1" style="width:100%">
+       <div class="figcaption">
+         <code>True Label:</code>
+         <strong_>cauliflower</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>cauliflower</strong_><br>
+         <code>Pruned:</code><strong_>artichoke</strong_><br>
+       </div>
+    </div>
+  </div>
+  <div class="column_portfolio_ abstract">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2F172_sombrero_cowboy_hat_dough.png?v=1573469378538" alt="abstract_1" style="width:100%">
+  <div class="figcaption">
+         <code>True Label:</code>
+         <strong_>sombrero</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>cowboy hat</strong_><br>
+         <code>Pruned:</code><strong_>dough</strong_><br>
+       </div>
+    </div>
+  </div>
+  
+    
+  <div class="column_portfolio_ abstract">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2Fbottle.png?v=1573664743810" alt="abstract_1" style="width:100%">
+      <div class="figcaption">  
+      <code>True Label:</code>
+         <strong_>pop bottle</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>restaurant</strong_><br>
+         <code>Pruned:</code><strong_>barber shop</strong_><br>
+       </div>
+    </div>
+  </div>
+
+  
+    <div class="column_portfolio_ atypical">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2Fdownload_37.png?v=1573258964605" alt="atypical_2" style="width:100%">
+        <div class="figcaption">
+      <code>True Label:</code>
+         <strong_>bathtub</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>bathtub</strong_><br>
+         <code>Pruned:</code><strong_>cucumber</strong_><br>
+       </div>
+    </div>
+  </div>
+  <div class="column_portfolio_ atypical">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2Ftoilet_seat.png?v=1573507521082" alt="atypical_2" style="width:100%">
+       <div class="figcaption">
+      <code>True Label:</code>
+         <strong_>toilet seat</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>toilet seat</strong_><br>
+         <code>Pruned:</code><strong_>folding chair</strong_><br>
+       </div>
+    </div>
+  </div>
+  
+   
+    <div class="column_portfolio_ atypical">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2Fplastic_bag.png?v=1573663557120" alt="atypical_" style="width:100%">
+         <div class="figcaption">  
+      <code>True Label:</code>
+         <strong_>plastic bag</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>gown</strong_><br>
+         <code>Pruned:</code><strong_>plastic bag</strong_><br>
+       </div>
+    </div>
+  </div>
+
+      
+    <div class="column_portfolio_ atypical">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2Fdownload_36.png?v=1573258948893" alt="atypical_" style="width:100%">
+    <div class="figcaption">
+      <code>True Label:</code>
+         <strong_>espresso</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>espresso</strong_><br>
+         <code>Pruned:</code><strong_>red wine</strong_><br>
+       </div>
+    </div>
+  </div>
+  
+ <div class="column_portfolio_ fine">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2F94_coffeepot_espresso_maker_coffeepot.png?v=1573496269717" alt="fine_1" style="width:100%">
+      <div class="figcaption">
+      <code>True Label:</code>
+         <strong_>coffeepot</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>espresso maker</strong_><br>
+         <code>Pruned:</code><strong_>coffeepot</strong_><br>
+       </div>
+    </div>
+  </div>
+ <div class="column_portfolio_ fine">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2Fcuirass.png?v=1573665382329" alt="fine_1" style="width:100%">
+        <div class="figcaption">  
+      <code>True Label:</code>
+         <strong_>cuirass</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>breastplate</strong_><br>
+         <code>Pruned:</code><strong_>cuirass</strong_><br>
+       </div>
+    </div>
+  </div>
+      
+  <div class="column_portfolio_ fine">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2Fcrib.png?v=1573508689310" alt="fine_1" style="width:100%">
+      <div class="figcaption">  
+      <code>True Label:</code>
+         <strong_>cradle</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>bassinet</strong_><br>
+         <code>Pruned:</code><strong_>cradle</strong_><br>
+       </div>
+    </div>
+  </div>
+
+  <div class="column_portfolio_ fine">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2F224_valley_valley_alp.png?v=1573506053550" alt="fine_1" style="width:100%">
+     <div class="figcaption">
+      <code>True Label:</code>
+         <strong_>valley</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>valley</strong_><br>
+         <code>Pruned:</code><strong_>alp</strong_><br>
+       </div>
+    </div>
+  </div>
+
+<!-- END GRID -->
+</div>
+  
+<div class="row">
+  <div class="column_portfolio_ abstract">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2Fdownload_5.png?v=1573258926064" alt="abstract_2" style="width:100%">
+         <div class="figcaption">
+      <code>True Label:</code>
+         <strong_>cloak</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>gas mask</strong_><br>
+         <code>Pruned:</code><strong_>breast plate</strong_><br>
+       </div>
+    </div>
+       </div>
+  <div class="column_portfolio_ abstract">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2Fgas_pump.png?v=1573483180759" alt="abstract_2" style="width:100%">
+        <div class="figcaption">
+      <code>True Label:</code>
+         <strong_>gas pump</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>gas pump</strong_><br>
+         <code>Pruned:</code><strong_>traffic light</strong_><br>
+       </div>
+    </div>
+  </div>
+   <div class="column_portfolio_ abstract">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2Fmaze_maze.png?v=1573664345071" alt="abstract_1" style="width:100%">
+          <div class="figcaption">  
+      <code>True Label:</code>
+         <strong_>maze</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>maze</strong_><br>
+         <code>Pruned:</code><strong_>crossword puzzle</strong_><br>
+       </div>
+    </div>
+  </div>
+  
+  <div class="column_portfolio_ abstract">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2Fbeer_bottle.png?v=1573670223987" alt="abstract_1" style="width:100%">
+            <div class="figcaption">  
+      <code>True Label:</code>
+         <strong_>beer bottle</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>beer bottle</strong_><br>
+         <code>Pruned:</code><strong_>sunscreen</strong_><br>
+       </div>
+    </div>
+  </div>
+
+  <div class="column_portfolio_ atypical">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2F174_jack_o_lantern_jack_o_lantern_lampshade.png?v=1573494821118" alt="atypical_2" style="width:100%">
+          <div class="figcaption">
+      <code>True Label:</code>
+         <strong_>jack o lantern</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>jack o lantern</strong_><br>
+         <code>Pruned:</code><strong_>lampshade</strong_><br>
+       </div>
+    </div>
+  </div>
+
+      
+   <div class="column_portfolio_ atypical">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2Fdownload_100.png?v=1573258953383" alt="atypical_" style="width:100%">
+        <div class="figcaption">
+      <code>True Label:</code>
+         <strong_>petri dish</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>espresso</strong_><br>
+         <code>Pruned:</code><strong_>petri dish</strong_><br>
+       </div>
+    </div>
+  </div>
+    <div class="column_portfolio_ atypical">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2Flimo_snow.png?v=1573664910123" alt="atypical_" style="width:100%">
+      <div class="figcaption">  
+      <code>True Label:</code>
+         <strong_>limousine</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>bob sled</strong_><br>
+         <code>Pruned:</code><strong_>snowplow</strong_><br>
+       </div>
+    </div>
+  </div>
+ 
+  <div class="column_portfolio_ atypical">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2Frocking_chair.png?v=1573662828317" alt="atypical_" style="width:100%">
+       <div class="figcaption">  
+      <code>True Label:</code>
+         <strong_>rocking chair</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>rocking chair</strong_><br>
+         <code>Pruned:</code><strong_>barber chair</strong_><br>
+       </div>
+    </div>
+  </div>
+  
+
+ <div class="column_portfolio_ fine">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2Fwhale.png?v=1573506908336" alt="fine_2" style="width:100%">
+      <div class="figcaption"> 
+      <code>True Label:</code>
+         <strong_>grey whale</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>grey whale</strong_><br>
+         <code>Pruned:</code><strong_>killer whale</strong_><br>
+       </div>
+    </div>
+  </div>
+  <div class="column_portfolio_ fine">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2Fscreen.png?v=1573506269949" alt="fine_2" style="width:100%">
+     <div class="figcaption">
+      <code>True Label:</code>
+         <strong_>screen</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>screen</strong_><br>
+         <code>Pruned:</code><strong_>television</strong_><br>
+       </div>
+    </div>
+  </div>
+  <div class="column_portfolio_ fine">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2F365_christmas_stocking_sock_christmas_stocking.png?v=1573507184121" alt="fine_2" style="width:100%">
+      <div class="figcaption">  
+      <code>True Label:</code>
+         <strong_>christmas stocking</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>sock</strong_><br>
+         <code>Pruned:</code><strong_>christmas stocking</strong_><br>
+       </div>
+    </div>
+  </div>
+  
+    <div class="column_portfolio_ fine">
+    <div class="content">  
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2F44_breakwater_lakeside_seashore.png?v=1573665679398" alt="fine_1" style="width:100%">
+         <div class="figcaption">  
+      <code>True Label:</code>
+         <strong_>breakwater</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>lakeside</strong_><br>
+         <code>Pruned:</code><strong_>seashore</strong_><br>
+       </div>
+    </div>
+  </div>
+
+
+<!-- END GRID -->
+</div>
+</div>
+  
+<div class="description_">    
+   <p> To better understand why PIEs are more sensitive to capacity,
+    we conducted a limited human study (85 participants) and find that PIEs from the ImageNet test set are more likely to be mislabelled,
+                  depict multiple objects or require fine-grained classification. </p>
+      <p> Over half of all PIE images were classified by human participants as either having an incorrect ground truth label or depicting multiple objects. The over-indexing of poorly structured data hints that 
+        the explosion in number of parameters for single image classification tasks like ImageNet may be solving a
+problem that is better addressed in the data cleaning pipeline.  </p>
+  <div>
+      <div class="content">
+     <div class="figcaption">
+      <strong_> PIEs overindex on data that is poorly structured for a single image classification tasks. For these images, predicting the correct ground truth may be an incomplete measure of generalization ability to unseen data. 
+        For example, a pruned model that predicts <i>suit</i> instead of the true label of <i>groom</i> would still be considered accurate by most humans. The <i>groom</i> is wearing a <i>suit</i> and thus both labels could be acceptable.
+        However, this prediction would be penalized by measures such as top-1 accuracy.
+        <br><br>
+        Click on the buttons below to view a sample of ImageNet PIEs in each category.
+     The labels below each image are: 1) true ground truth ImageNet label, 2) baseline non-pruned modal prediction, 3)  most frequent prediction from a population of pruned ResNet-50 models.</strong_>
+  </div>
+  <hr>
+<div id="myBtnContainer_4">
+ <button class="btn active" onclick="filterSelectionfinalfinal('frequently')"> frequently co-occuring labels</button>
+  <button class="btn" onclick="filterSelectionfinalfinal('incorrect')"> incorrect or inadequate ground truth</button>
+  <button class="btn" onclick="filterSelectionfinalfinal('multiple')"> multiple-object image</button>
+<hr>
+</div>
+
+
+<!-- Portfolio Gallery Grid -->
+      
+<div class="row">
+
+  <div class="column_headerfinalfinal incorrect">
+    <div class="content">
+    <div class="figcaption">  
+      <code> incorrect or inadequate ground truth:</code> a sample of PIEs where the ground truth label for the image is incorrect or there is insufficient information for a human to predict the correct ground truth label.
+    </div>
+  </div>
+  </div>
+  <div class="column_headerfinalfinal multiple">
+    <div class="content">
+      <div class="figcaption">  
+        <code>multiple objects</code>: a sample of PIEs where the image depicts multiple objects, a human may consider several labels to be appropriate predictions (e.g.,
+      desktop computer consisting of a screen, mouse and monitor, a barber chair in a barber shop,
+      a wine bottle which is full of red wine).
+    </div>
+  </div>
+  </div>
+ <div class="column_headerfinalfinal frequently">
+    <div class="content">
+     <div class="figcaption">  
+       <code>frequently co-occuring labels:</code> a sample of PIEs where multiple object(s) occur frequently together in the same image. 
+  In certain cases, such as <i>projectile</i> and <i>missile</i>, this is because both labels are acceptable to describe the same object. 
+    </div>
+  </div>
+   </div>
+    <!-- END GRID -->
+</div>
+  
+<div class="row">
+  
+  
+   <div class="column_portfoliofinalfinal multiple">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2F220_bakery_french_loaf_bakery.png?v=1573662213987" alt="multiple_2" style="width:100%">
+      <div class="figcaption">  
+      <code>True Label:</code>
+         <strong_>bakery</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>french loaf</strong_><br>
+         <code>Pruned:</code><strong_>bakery</strong_><br>
+       </div>
+    </div>
+  </div>
+  <div class="column_portfoliofinalfinal multiple">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2F33_dock_container_ship_dock.png?v=1573506574073" alt="multiple_2" style="width:100%">
+       <div class="figcaption">  
+      <code>True Label:</code>
+         <strong_>dock</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>container ship</strong_><br>
+         <code>Pruned:</code><strong_>dock</strong_><br>
+       </div>
+    </div>
+  </div>
+  <div class="column_portfoliofinalfinal multiple">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2F273_hammer_carpenters_kit_hammer%20copy.png?v=1573660656896" alt="multiple_2" style="width:100%">
+        <div class="figcaption">  
+      <code>True Label:</code>
+         <strong_>hammer</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>carpenter's kit</strong_><br>
+         <code>Pruned:</code><strong_>hammer</strong_><br>
+       </div>
+    </div>
+  </div>
+  
+    <div class="column_portfoliofinalfinal multiple">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2Fmulti_object.png?v=1573663218027" alt="multiple_1" style="width:100%">
+      <div class="figcaption">  
+      <code>True Label:</code>
+         <strong_>piggy bank</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>mushroom</strong_><br>
+         <code>Pruned:</code><strong_>jigsaw puzzle</strong_><br>
+       </div>
+    </div>
+  </div>
+
+  
+ <div class="column_portfoliofinalfinal frequently">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2F241_barber_chair_barber_chair_barbershop.png?v=1573496288027" alt="multiple_1" style="width:100%">
+        <div class="figcaption">
+      <code>True Label:</code>
+         <strong_>barber chair</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>barber chair</strong_><br>
+         <code>Pruned:</code><strong_>barbershop</strong_><br>
+       </div>
+    </div>
+  </div>
+      
+  <div class="column_portfoliofinalfinal frequently">
+    <div class="content">
+      <img src="https://cdn.glitch.com/02868eea-fe84-443e-964a-8f04885fa5fa%2F21_groom_groom_suit.png?v=1574211627482" alt="multiple_1" style="width:100%">
+           <div class="figcaption">
+      <code>True Label:</code>
+         <strong_>groom</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>groom</strong_><br>
+         <code>Pruned:</code><strong_>suit</strong_><br>
+       </div>
+    </div>
+       </div>
+      
+  <div class="column_portfoliofinalfinal frequently">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2F355_mortarboard_academic_gown_mortarboard.png?v=1573658986843" alt="multiple_1" style="width:100%">
+        <div class="figcaption">
+      <code>True Label:</code>
+         <strong_>mortarboard</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>academic gown</strong_><br>
+         <code>Pruned:</code><strong_>mortarboard</strong_><br>
+       </div>
+    </div>
+       </div>
+  
+    
+  <div class="column_portfoliofinalfinal frequently">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2Fcanoe.png?v=1573665479691" alt="multiple_1" style="width:100%">
+         <div class="figcaption">  
+      <code>True Label:</code>
+         <strong_>paddle</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>paddle</strong_><br>
+         <code>Pruned:</code><strong_>canoe</strong_><br>
+       </div>
+    </div>
+  </div>
+
+ <div class="column_portfoliofinalfinal incorrect">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2F201_tub_caldron_wok.png?v=1573489142261" alt="incorrect_1" style="width:100%">
+       <div class="figcaption">
+      <code>True Label:</code>
+         <strong_>tub</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>cauldron</strong_><br>
+         <code>Pruned:</code><strong_>wok</strong_><br>
+       </div>
+    </div>
+      </div>
+  <div class="column_portfoliofinalfinal incorrect">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2F265_sleeping_bag_apron_bib.png?v=1573493328529" alt="incorrect_1" style="width:100%">
+     <div class="figcaption">
+      <code>True Label:</code>
+         <strong_>sleeping bag</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>apron</strong_><br>
+         <code>Pruned:</code><strong_>bib</strong_><br>
+       </div>
+    </div>
+       </div>
+
+   <div class="column_portfoliofinalfinal incorrect">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2Fcrash_helmet.png?v=1573663972347" alt="incorrect_1" style="width:100%">
+        <div class="figcaption">  
+      <code>True Label:</code>
+         <strong_>crash helmet</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>gas mask</strong_><br>
+         <code>Pruned:</code><strong_>lens cap</strong_><br>
+       </div>
+    </div>
+  </div>
+
+   
+  <div class="column_portfoliofinalfinal incorrect">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2F290_polecat_black_footed_ferret_malamute.png?v=1573670791482" alt="incorrect_1" style="width:100%">
+       <div class="figcaption">  
+      <code>True Label:</code>
+         <strong_>polecat</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>black footed ferret</strong_><br>
+         <code>Pruned:</code><strong_>malamute</strong_><br>
+       </div>
+    </div>
+  </div>
+
+<!-- END GRID -->
+</div>
+  
+<div class="row">
+  
+  <div class="column_portfoliofinalfinal multiple">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2F223_guacamole_burrito_plate.png?v=1573659747235" alt="multiple_1" style="width:100%">
+        <div class="figcaption">
+      <code>True Label:</code>
+         <strong_>guacamole</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>burrito</strong_><br>
+         <code>Pruned:</code><strong_>plate</strong_><br>
+       </div>
+    </div>
+  </div>
+  
+      <div class="column_portfoliofinalfinal multiple">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2Fconfectionary.png?v=1573665859916" alt="multiple_1" style="width:100%">
+           <div class="figcaption">  
+      <code>True Label:</code>
+         <strong_>confectionary</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>packet</strong_><br>
+         <code>Pruned:</code><strong_>grocery store</strong_><br>
+       </div>
+    </div>
+  </div>
+  <div class="column_portfoliofinalfinal multiple">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2F127_parallel_bars_parallel_bars_horizontal_bar.png?v=1573495571682" alt="multiple_1" style="width:100%">
+      <div class="figcaption">
+      <code>True Label:</code>
+         <strong_>parallel bars</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>parallel bars</strong_><br>
+         <code>Pruned:</code><strong_>horizontal bars</strong_><br>
+       </div>
+    </div>
+  </div>
+  <div class="column_portfoliofinalfinal multiple">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2Fdownload_9.png?v=1573481511702" alt="multiple_1" style="width:100%">
+        <div class="figcaption">
+      <code>True Label:</code>
+         <strong_>desktop computer</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>screen</strong_><br>
+         <code>Pruned:</code><strong_>monitor</strong_><br>
+       </div>
+    </div>
+  </div>
+  
+
+  
+    
+ <div class="column_portfoliofinalfinal frequently">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2Ftennis.png?v=1573663366057" alt="multiple_1" style="width:100%">
+            <div class="figcaption">  
+      <code>True Label:</code>
+         <strong_>tennis ball</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>tennis ball</strong_><br>
+         <code>Pruned:</code><strong_>racket</strong_><br>
+       </div>
+    </div>
+  </div>
+
+      
+  
+<div class="column_portfoliofinalfinal frequently">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2F117_wine_bottle_red_wine_wine_bottle.png?v=1573506580293" alt="multiple_2" style="width:100%">
+         <div class="figcaption">  
+      <code>True Label:</code>
+         <strong_>wine bottle</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>red wine</strong_><br>
+         <code>Pruned:</code><strong_>wine bottle</strong_><br>
+       </div>
+    </div>
+  </div>
+ <div class="column_portfoliofinalfinal frequently">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2Fmissile.png?v=1573508566845" alt="multiple_2" style="width:100%">
+          <div class="figcaption">  
+      <code>True Label:</code>
+         <strong_>projectile</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>missile</strong_><br>
+         <code>Pruned:</code><strong_>projectile</strong_><br>
+       </div>
+    </div>
+  </div>
+  <div class="column_portfoliofinalfinal frequently">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2F216_corn_corn_ear.png?v=1573658734126" alt="multiple_2" style="width:100%">
+       <div class="figcaption">  
+      <code>True Label:</code>
+         <strong_>corn</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>corn</strong_><br>
+         <code>Pruned:</code><strong_>ear (of corn)</strong_><br>
+       </div>
+    </div>
+  </div>
+   
+  
+<div class="column_portfoliofinalfinal incorrect">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2F162_restaurant_meat_loaf_guacamole.png?v=1573494646093" alt="incorrect_2" style="width:100%">
+       <div class="figcaption">  
+      <code>True Label:</code>
+         <strong_>restaurant</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>meat loaf</strong_><br>
+         <code>Pruned:</code><strong_>guacamole</strong_><br>
+       </div>
+    </div>
+  </div>
+  
+   
+  <div class="column_portfoliofinalfinal incorrect">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2F197_envelope_dumbbell_maraca.png?v=1573669161285" alt="incorrect_1" style="width:100%">
+        <div class="figcaption">  
+      <code>True Label:</code>
+         <strong_>envelope</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>dumbbell</strong_><br>
+         <code>Pruned:</code><strong_>maraca</strong_><br>
+       </div>
+    </div>
+  </div>
+  <div class="column_portfoliofinalfinal incorrect">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2F243_wool_pole_wing.png?v=1573495209794" alt="incorrect_2" style="width:100%">
+      <div class="figcaption">  
+      <code>True Label:</code>
+         <strong_>wool</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>pole</strong_><br>
+         <code>Pruned:</code><strong_>wing</strong_><br>
+       </div>
+    </div>
+  </div>
+  <div class="column_portfoliofinalfinal incorrect">
+    <div class="content">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2F175_radio_radio_oscilloscope_.png?v=1573495405975" alt="incorrect_2" style="width:100%">
+       <div class="figcaption">  
+      <code>True Label:</code>
+         <strong_>radio</strong_><br>
+         <code>Non-Pruned:</code>
+         <strong_>radio</strong_><br>
+         <code>Pruned:</code><strong_>oscilloscope</strong_><br>
+       </div>
+    </div>
+  </div>
+<!-- END GRID -->
+</div>
+</div>
+  <div class="description_">   
+  <p> On real world datasets, the stakes are often much higher than correctly classifying a <i>paddle</i> or <i>guacamole</i>. For sensitive tasks such as patient risk stratification or medical diagnoses <dt-cite key="NIPS2012_4525"></dt-cite>, our results suggest caution should be excercised before deploying pruned models. </p>
+     <p> PIE provides one tool to become more familiar with the underlying data by surfacing
+      a far smaller subset of examples the model finds challenging to the human expert. This can be extremely valuable for creating human-in-the-loop decisions,
+    where certain atypical examples are re-routed for human inspection <dt-cite key="Leibig2017"></dt-cite> or to aid interpretability as a case based reasoning tool to explain model behavior<dt-cite key="2017Gurumoorthy,Caruana2000,Hooker2019ABF,NIPS2016_6300"></dt-cite>.</p>
+
+  
+   <div class="content">
+     <div class="figcaption">
+       <hr>
+<strong_>Inspecting PIE images can help us understand the types of inputs the model finds most challenging. PIE images are far harder for a model to classify. Removing PIE images improves top-1 generalization performance beyond the baseline.
+       <br><br>
+       
+       Go ahead and click the buttons below.</strong_>
+  </div>
+  <br>
+  <div id="myBtnContainer_2">
+  <button class="btn active_2" onclick="filterSelection_('pie')"> generalization to pie </button>
+  <button class="btn" onclick="filterSelection_('without')"> generalization excluding pie</button>
+<hr>
+
+  
+  <div class="row">
+  <div class="column_header pie">
+  <div class="content_reduced_slightly">
+      <img src="https://cdn.glitch.com/f1ebd1ee-d1ac-4538-8ad5-0034e332e4ae%2Fvs_random_sample.png?v=1574223373019">
+    </div>
+  </div>
+  
+  <div class="column_header without">
+    <div class="content_reduced_slightly">
+      <img src="https://cdn.glitch.com/a08d19a0-dea5-4f06-9627-caa859e2d931%2Ftop_1.png?v=1573779673537" alt="abstract_1" style="width:100%">
+    </div>
+  </div>
+  
+  </div>
+  
+    <!-- END GRID -->
+</div>
+</div>
+    
+<div class="row">
+  <div class="column_header pie">
+    <div class="content">
+     <div class="figcaption">
+    The average top-1 accuracy of a ResNet-50 deep neural network is far lower
+      on a random sample of PIE ImageNet images (green bar) relative to performance on
+      a random sample of images from the ImageNet test set (pink bar).
+      </div>
+    </div>
+    </div>
+  <div class="column_header without">
+  <div class="content">
+  <div class="figcaption">
+Removing PIE images benefits generalization. Top-1 accuracy improves beyond baseline performance when the model is restricted
+  to a random sample of non-pie ImageNet images (teal). 
+  </div>
+   </div>
+    </div>
+    <!-- END GRID -->
+</div>
+</div>
+</div>
+
+<div class="descriptions_">  
+<h3>What class categories are impacted by pruning?</h3>
+</div>
+<div class="description_">        
+      <p> ImageNet has 1000 different class categories, which include both every day objects such as <i>cassette player</i> and more nuanced categories that refer to the texture of an object such as <i>velvet</i> or even person types such as <i>groom</i>. 
+        If the impact of pruning was uniform across all classes, we would expect the model accuracy on each class to shift by the same 
+      number of percentage points as the difference in top-1 accuracy between the pruned and non-pruned model.</p>
+        <p>  This forms our null hypothesis, and we must decide for each class whether
+        to reject the null hypothesis and accept the alternative -- the 
+        change to class level recall differs from the change to overall accuracy
+        in a statistically significant way. This amounts to asking -- <i>did the class perform better or worse than expected given the overall change in top-1 accuracy after pruning?</i></p>
+       <p> Evaluating whether the difference between a sample of mean-shifted class accuracy from pruned and non-pruned models is
+        “real” can be thought of as determining whether two data samples are drawn from the same underlying distribution, which is the subject of a large body of goodness of fit literature <dt-cite key="1954anderson_darling,2002huber"></dt-cite>. </p>      
+      <p>To compare class level performance between pruned and non-pruned models, we use a two-sample, two-tailed,
+        independent Welch’s t-test <dt-cite key="1947welch"></dt-cite>. We independently train a population of pruned and non-pruned models and apply the t-test
+ to determine whether the means of the samples differ significantly.
+        This methodology allows us to identify a subset of classes where model performance either remains relatively robust to the loss of model weights or is overly sensitive to the reduction in capacity.</p>
+
+     
+      <div class="content">
+     <div class="figcaption">
+       <hr>
+      <strong_>  We independently train a population of pruned and non-pruned models and apply the t-test to determine whether the means of the samples differ significantly. At all levels of pruning, some classes are impacted far more than others 
+        (classes that are statistically significant indicated by pink vs. the classes in grey where the relative change in performance is not statistically significant).
+        <br><br>
+        We plot both the absolute % change in class recall (grey and pink bars) and
+          the normalized accuracy relative to change in overall top-1 accuracy caused by pruning (grey and green markers).
+        <br><br>
+        Go ahead and click the buttons below to see the classes impacted by pruning.</strong_>
+  </div>
+  <br>
+
+<div id="myBtnContainer_3">
+<button class="btn active_3" onclick="filterSelectionfinal('thirty')"> 30% pruned </button>
+<button class="btn" onclick="filterSelectionfinal('fifty')"> 50% pruned </button>
+<button class="btn" onclick="filterSelectionfinal('seventy')"> 70% pruned</button>
+<button class="btn" onclick="filterSelectionfinal('ninety')"> 90% pruned </button>
+<hr>
+  
+
+  <div class="row">
+  <div class="column_portfoliofinal thirty">
+  <div class="content_resized">
+      <img src="https://cdn.glitch.com/02868eea-fe84-443e-964a-8f04885fa5fa%2F30_all.png?v=1574117622736">
+    </div>
+  </div>
+  
+  <div class="column_portfoliofinal fifty">
+    <div class="content_resized">
+      <img src="https://cdn.glitch.com/02868eea-fe84-443e-964a-8f04885fa5fa%2F50_all_.png?v=1574117629857" alt="abstract_1" style="width:100%">
+    </div>
+  </div>
+    
+  <div class="column_portfoliofinal seventy">
+    <div class="content_resized">
+      <img src="https://cdn.glitch.com/02868eea-fe84-443e-964a-8f04885fa5fa%2F70_all.png?v=1574117642038" alt="abstract_1" style="width:100%">
+    </div>
+  </div>
+    
+  <div class="column_portfoliofinal ninety">
+    <div class="content_resized">
+      <img src="https://cdn.glitch.com/02868eea-fe84-443e-964a-8f04885fa5fa%2F90_all.png?v=1574117649028" alt="abstract_1" style="width:100%">
+    </div>
+  </div>
+
+  
+    <!-- END GRID -->
+</div>
+</div>
+</div>
+  
+  <div class="description_">  
+      <p>The directionality and magnitude of the impact of pruning is nuanced and surprising. Our results show that certain classes are relatively robust to the overall degradation experienced 
+        by the model whereas others degrade in performance far more than the model itself. This amounts to 
+        <em>selective brain damage</em> with performance on certain classes evidencing far more sensitivity 
+        to the removal of model capacity.</p>
+        
+       <p>The classes that experience a significant <em>relative</em> decrease in accuracy are fewer at every level than those that recieve a relative boost, however the magnitude of class decreases is larger 
+        than the gains (which pulls overall accuracy downwards). 
+        This tells us that the loss in generalization caused by pruning is far more concentrated 
+        than the relative gains, with fewer classes bearing
+        the brunt of the degradation caused by weight removal.</p>
+      <p>At higher levels of pruning, more classes are impacted and the absolute % difference widens between the classes most and least impacted. Most real world applications of pruning tend to prune above 50% in order to gain the returns in memory and efficiency.
+       When 90% of the weights are removed, the relative change to 582 out 
+       of 1000 ImageNet classes is statistically significant. </p>
+ </div> 
+<div class="descriptions_">  
+<h3>What does this mean for the use of pruned models?</h3>
+  </div>
+  <div class="description_">          
+ <p> Pruned models are widely used by many real world machine learning applications. Many of the algorithms on your phone are likely pruned or compressed in some way. 
+   Our results are surprising and suggest that 
+   a reliance on top-line metrics such as top-1 or 
+   top-5 test-set accuracy hides
+   critical details in the ways that pruning 
+   impacts model generalization.   </p>
+  <p> However, our methodology offers one way for humans to better understand 
+   the trade-offs incurred by pruning and gain intuition about what classes 
+   benefit the most from additional capacity. We believe this type of tooling is a valuable first step to help human experts understand the trade-offs incurred by pruning and surface challenging examples for human judgement.</p>
+        
+
+<p> We welcome additional discussion and code contributions on the topic of this work. A comprehensive introduction of the methodology,
+  experiment framework and results can be found in our <a href="https://arxiv.org/abs/1911.05248">paper</a> and <a href="https://github.com/google-research/google-research/tree/master/pruning_identified_exemplars">open source code</a>.
+  There is substantial ground we were not able to address within the scope of this work, and underserved areas worthy of
+  future consideration include evaluating the impact of pruning on additional domains such as language and audio, a consideration of
+  different architectures and a comparison of the relative trade-offs incurred by pruning methods with other popular compression techniques such as quantization. 
+   </p>
+	  <code> Visiting the NeurIPS Google Booth? </code>
+         <code> Take a look at our demo slides <a href="https://drive.google.com/file/d/1VIeV7l9x-KXdT_UdZB54GQxhGHRRQ79T/view?usp=sharing">here</a>.</code>
+
+</div>
+<script>
+
+filterSelection("atypical") // Execute the function and show all columns
+function filterSelection(c) {
+  var x, y, i;
+  x = document.getElementsByClassName("column_portfolio_");
+  y = document.getElementsByClassName("column_header_");
+  // Add the "show" class (display:block) to the filtered elements,
+  // and remove the "show" class from the elements that are not selected
+
+  for (i = 0; i < x.length; i++) {
+    RemoveClass(x[i], "show");
+    if (x[i].className.indexOf(c) > -1) AddClass(x[i], "show");
+  }
+  for (i = 0; i < y.length; i++) {
+    RemoveClass(y[i], "show");
+    if (y[i].className.indexOf(c) > -1) AddClass(y[i], "show");
+  }
+}
+  
+filterSelection_("pie") // Execute the function and show all columns
+function filterSelection_(c) {
+  var x, y, z, i;
+  x = document.getElementsByClassName("column_portfolio");
+  y = document.getElementsByClassName("column_header");
+  z = document.getElementsByClassName("column_two_fig");
+  // Add the "show" class (display:block) to the filtered elements,
+  // and remove the "show" class from the elements that are not selected
+
+  for (i = 0; i < x.length; i++) {
+    RemoveClass(x[i], "show");
+    if (x[i].className.indexOf(c) > -1) AddClass(x[i], "show");
+  }
+  for (i = 0; i < y.length; i++) {
+    RemoveClass(y[i], "show");
+    if (y[i].className.indexOf(c) > -1) AddClass(y[i], "show");
+  }
+  
+  for (i = 0; i < z.length; i++) {
+    RemoveClass(z[i], "show");
+    if (z[i].className.indexOf(c) > -1) AddClass(z[i], "show");
+  }
+}
+  
+filterSelectionfinal("thirty") // Execute the function and show all columns
+function filterSelectionfinal(c) {
+  var x, y, i;
+  x = document.getElementsByClassName("column_portfoliofinal");
+  y = document.getElementsByClassName("column_headerfinal");
+  // Add the "show" class (display:block) to the filtered elements,
+  // and remove the "show" class from the elements that are not selected
+
+  for (i = 0; i < x.length; i++) {
+    RemoveClass(x[i], "show");
+    if (x[i].className.indexOf(c) > -1) AddClass(x[i], "show");
+  }
+  for (i = 0; i < y.length; i++) {
+    RemoveClass(y[i], "show");
+    if (y[i].className.indexOf(c) > -1) AddClass(y[i], "show");
+  }
+ 
+}
+  
+filterSelectionfinalfinal("frequently") // Execute the function and show all columns
+function filterSelectionfinalfinal(c) {
+  var x, y, i;
+  x = document.getElementsByClassName("column_portfoliofinalfinal");
+  y = document.getElementsByClassName("column_headerfinalfinal");
+  // Add the "show" class (display:block) to the filtered elements,
+  // and remove the "show" class from the elements that are not selected
+  for (i = 0; i < x.length; i++) {
+    RemoveClass(x[i], "show");
+    if (x[i].className.indexOf(c) > -1) AddClass(x[i], "show");
+  }
+  for (i = 0; i < y.length; i++) {
+    RemoveClass(y[i], "show");
+    if (y[i].className.indexOf(c) > -1) AddClass(y[i], "show");
+  }
+ 
+}
+  
+
+// Show filtered elements
+function AddClass(element, name) {
+  var i, arr1, arr2;
+  arr1 = element.className.split(" ");
+  arr2 = name.split(" ");
+  for (i = 0; i < arr2.length; i++) {
+    if (arr1.indexOf(arr2[i]) == -1) {
+      element.className += " " + arr2[i];
+    }
+  }
+}
+
+// Hide elements that are not selected
+function RemoveClass(element, name) {
+  var i, arr1, arr2;
+  arr1 = element.className.split(" ");
+  arr2 = name.split(" ");
+  for (i = 0; i < arr2.length; i++) {
+    while (arr1.indexOf(arr2[i]) > -1) {
+      arr1.splice(arr1.indexOf(arr2[i]), 1);
+    }
+  }
+  element.className = arr1.join(" ");
+}
+
+// Add active class to the current button (highlight it)
+var btnContainer1 = document.getElementById("myBtnContainer");
+var btns1 = btnContainer1.getElementsByClassName("btn");
+for (var i = 0; i < btns1.length; i++) {
+  btns1[i].addEventListener("click", function(){
+    var current1 = document.getElementsByClassName("active_1");
+    current1[0].className = current1[0].className.replace(" active_1", "");
+    this.className += " active_1";
+  });
+}
+  
+// Add active class to the current button (highlight it)
+var btnContainer2 = document.getElementById("myBtnContainer_2");
+var btns2 = btnContainer2.getElementsByClassName("btn");
+for (var i = 0; i < btns2.length; i++) {
+  btns2[i].addEventListener("click", function(){
+    var current2 = document.getElementsByClassName("active_2");
+    current2[0].className = current2[0].className.replace(" active_2", "");
+    this.className += " active_2";
+  });
+}
+  
+// Add active class to the current button (highlight it)
+var btnContainer3 = document.getElementById("myBtnContainer_3");
+var btns3 = btnContainer3.getElementsByClassName("btn");
+for (var i = 0; i < btns3.length; i++) {
+  btns3[i].addEventListener("click", function(){
+    var current3 = document.getElementsByClassName("active_3");
+    current3[0].className = current3[0].className.replace(" active_3", "");
+    this.className += " active_3";
+  });
+}
+  
+// Add active class to the current button (highlight it)
+var btnContainer4 = document.getElementById("myBtnContainer_4");
+var btns4 = btnContainer4.getElementsByClassName("btn");
+for (var i = 0; i < btns4.length; i++) {
+  btns4[i].addEventListener("click", function(){
+    var current4 = document.getElementsByClassName("active_4");
+    current4[0].className = current4[0].className.replace(" active_4", "");
+    this.className += " active_4";
+  });
+}
+</script> 
+  </div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.css">
+<script src="template.v1.js"></script>
+<dt-appendix>
+<div class="description_">  
+<h3>Acknowledgments</h3>
+  
+<p> A special thank you is due to James Wexler, Keren Gu-Lemberg and Prajit Ramachandran for some helpful suggestions about how to visualize and communicate our results in an interactive format.
+   This article was in part prepared using the <a href="https://pair-code.github.io/saliency/">Google AI Pair</a> template and style guide.
+   The citation management for this article uses the <a href="https://github.com/distillpub/template">template v1</a> of the Distill style script. </p>
+ 
+<p>We thank the generosity of our peers and colleagues for valuable feedback on earlier versions of this work. In particular, we would like to acknowledge the valuable input of Jonas Kemp, Simon Kornblith, Julius Adebayo, Dumitru Erhan, Hugo Larochelle, 
+  Nicolas Papernot, Catherine Olsson, Cliff Young, Martin Wattenberg, 
+  Utku Evci, James Wexler, Trevor Gale,  Melissa Fabros,
+  Prajit Ramachandran, Pieter Kindermans, Moustapha Cisse, Erich Elsen and Nyalleng Moorosi. </p>
+  <p> We thank the institutional support and encouragement of Dan Nanas,
+  Rita Ruiz, Sally Jesmonth and Alexander Popper. </p>
+  
+<h3>Citation</h3>
+<pre class="citation long">@article{hooker2019selective,
+    title={Selective Brain Damage: Measuring the Disparate Impact of Model Pruning},
+    author={Sara Hooker and Aaron Courville and Yann Dauphin and Andrea Frome},
+    year={2019},
+    url={https://arxiv.org/abs/1911.05248},
+    eprint={1911.05248},
+    archivePrefix={arXiv},
+    primaryClass={cs.LG}
+}
+
+</pre>
+</div>
+</dt-appendix>
+	
+<div class="description_">  
+<h3>Bibliography</h3>
+</div>
+<script type="text/bibliography">
+
+@article{false_discovery_rates,
+author = {Ridgeway, Greg and MacDonald, John},
+year = {2009},
+month = {06},
+pages = {661-668},
+title = {Doubly Robust Internal Benchmarking and False Discovery Rates for Detecting Racial Bias in Police Stops},
+volume = {104},
+journal = {Journal of the American Statistical Association},
+doi = {10.1198/jasa.2009.0034}
+}
+
+@ARTICLE{2014certifying_removing_disparate_impact,
+       author = {Feldman, Michael and Friedler, Sorelle and Moeller, John and
+         Scheidegger, Carlos and Venkatasubramanian, Suresh},
+        title = {Certifying and removing disparate impact},
+      journal = {arXiv e-prints},
+     keywords = {Statistics - Machine Learning, Computer Science - Computers and Society},
+         year = "2014",
+        month = "Dec",
+          eid = {arXiv:1412.3756},
+        pages = {arXiv:1412.3756},
+archivePrefix = {arXiv},
+       eprint = {1412.3756},
+ primaryClass = {stat.ML},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2014arXiv1412.3756F},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+
+
+@incollection{NIPS2016_6316,
+title = {Satisfying Real-world Goals with Dataset Constraints},
+author = {Goh, Gabriel and Cotter, Andrew and Gupta, Maya and Friedlander, Michael P},
+booktitle = {Advances in Neural Information Processing Systems 29},
+editor = {D. D. Lee and M. Sugiyama and U. V. Luxburg and I. Guyon and R. Garnett},
+pages = {2415--2423},
+year = {2016},
+publisher = {Curran Associates, Inc.},
+url = {http://papers.nips.cc/paper/6316-satisfying-real-world-goals-with-dataset-constraints.pdf}
+}
+
+
+@ARTICLE{2019arXiv190110566Z,
+       author = {Zink, Anna and Rose, Sherri},
+        title = {Fair Regression for Health Care Spending},
+      journal = {arXiv e-prints},
+     keywords = {Statistics - Applications, Computer Science - Computers and Society, Statistics - Methodology, Statistics - Machine Learning},
+         year = "2019",
+        month = "Jan",
+          eid = {arXiv:1901.10566},
+        pages = {arXiv:1901.10566},
+archivePrefix = {arXiv},
+       eprint = {1901.10566},
+ primaryClass = {stat.AP},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2019arXiv190110566Z},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+
+@ARTICLE{2016fair_prediction,
+       author = {Chouldechova, Alexandra},
+        title = {Fair prediction with disparate impact: A study of bias in recidivism prediction instruments},
+      journal = {arXiv e-prints},
+     keywords = {Statistics - Applications, Computer Science - Computers and Society, Statistics - Machine Learning},
+         year = "2016",
+        month = "Oct",
+          eid = {arXiv:1610.07524},
+        pages = {arXiv:1610.07524},
+archivePrefix = {arXiv},
+       eprint = {1610.07524},
+ primaryClass = {stat.AP},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2016arXiv161007524C},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+
+
+@incollection{NIPS2016_6300,
+title = {Examples are not enough, learn to criticize! Criticism for Interpretability},
+author = {Kim, Been and Khanna, Rajiv and Koyejo, Oluwasanmi O},
+booktitle = {Advances in Neural Information Processing Systems 29},
+editor = {D. D. Lee and M. Sugiyama and U. V. Luxburg and I. Guyon and R. Garnett},
+pages = {2280--2288},
+year = {2016},
+publisher = {Curran Associates, Inc.},
+}
+
+@book{2002huber,
+  title={Goodness-of-Fit Tests and Model Validity},
+  author={Huber-Carol, C. and Balakrishnan, N. and Nikulin, M. and Mesbah, M.},
+  isbn={9780817642099},
+  lccn={2002022647},
+  series={Goodness-of-fit Tests and Model Validity},
+  url={https://books.google.com/books?id=gUMcv2\_NrhkC},
+  year={2002},
+} 
+
+
+
+
+
+@incollection{NIPS2012_4525,
+title = {Patient Risk Stratification for Hospital-Associated C. diff as a Time-Series Classification Task},
+author = {Jenna Wiens and Eric Horvitz and John V. Guttag},
+booktitle = {Advances in Neural Information Processing Systems 25},
+editor = {F. Pereira and C. J. C. Burges and L. Bottou and K. Q. Weinberger},
+pages = {467--475},
+year = {2012},
+publisher = {Curran Associates, Inc.},
+url = {http://papers.nips.cc/paper/4525-patient-risk-stratification-for-hospital-associated-c-diff-as-a-time-series-classification-task.pdf}
+}
+
+@INPROCEEDINGS{Cun90optimalbrain,
+    author = {Yann Le Cun and John S. Denker and Sara A. Solla},
+    title = {Optimal Brain Damage},
+    booktitle = {Advances in Neural Information Processing Systems},
+    year = {1990},
+    pages = {598--605},
+    publisher = {Morgan Kaufmann}
+}
+
+@INPROCEEDINGS{Hassibi93secondorder,
+    author = {Babak Hassibi and David G. Stork and Stork Crc. Ricoh. Com},
+    title = {Second Order Derivatives for Network Pruning: Optimal Brain Surgeon},
+    booktitle = {Advances in Neural Information Processing Systems 5},
+    year = {1993},
+    pages = {164--171},
+    publisher = {Morgan Kaufmann}
+}
+
+@incollection{NIPS1990_Andreas_weight_elimination,
+title = {Generalization by Weight-Elimination with Application to Forecasting},
+author = {Andreas S. Weigend and David E. Rumelhart and Bernardo A. Huberman},
+booktitle = {Advances in Neural Information Processing Systems 3},
+editor = {R. P. Lippmann and J. E. Moody and D. S. Touretzky},
+pages = {875--882},
+year = {1991},
+publisher = {Morgan-Kaufmann},
+}
+
+@article {1947welch,
+    AUTHOR = {Welch, B. L.},
+     TITLE = {The generalization of Students problem when several
+              different population variances are involved},
+   JOURNAL = {Biometrika},
+  FJOURNAL = {Biometrika},
+    VOLUME = {34},
+      YEAR = {1947},
+     PAGES = {28--35},
+      ISSN = {0006-3444},
+   MRCLASS = {62.0X},
+  MRNUMBER = {0019277},
+MRREVIEWER = {A. A. Bennett},
+       DOI = {10.2307/2332510},
+       URL = {https://doi.org/10.2307/2332510},
+}
+
+@incollection{Mozer1988,
+title = {Skeletonization: A Technique for Trimming the Fat from a Network via Relevance Assessment},
+author = {Mozer, Michael C and Paul Smolensky},
+booktitle = {Advances in Neural Information Processing Systems 1},
+editor = {D. S. Touretzky},
+pages = {107--115},
+year = {1989},
+publisher = {Morgan-Kaufmann},
+url = {http://papers.nips.cc/paper/119-skeletonization-a-technique-for-trimming-the-fat-from-a-network-via-relevance-assessment.pdf}
+}
+
+@article{Sowell8223,
+	author = {Sowell, Elizabeth R. and Thompson, Paul M. and Leonard, Christiana M. and Welcome, Suzanne E. and Kan, Eric and Toga, Arthur W.},
+	title = {Longitudinal Mapping of Cortical Thickness and Brain Growth in Normal Children},
+	volume = {24},
+	number = {38},
+	pages = {8223--8231},
+	year = {2004},
+	doi = {10.1523/JNEUROSCI.1798-04.2004},
+	publisher = {Society for Neuroscience},
+	URL = {https://www.jneurosci.org/content/24/38/8223},
+	journal = {Journal of Neuroscience}
+}
+
+
+@article{1992_nowlan_hinton,
+author = {Nowlan, Steven J. and Hinton, Geoffrey E.},
+title = {Simplifying Neural Networks by Soft Weight-Sharing},
+journal = {Neural Computation},
+volume = {4},
+number = {4},
+pages = {473-493},
+year = {1992},
+doi = {10.1162/neco.1992.4.4.473},
+}
+
+@incollection{RAKI1994,
+title = "Synaptic development of the cerebral cortex: implications for learning, memory, and mental illness",
+editor = "J. Van Pelt and M.A. Corner and H.B.M. Uylings and F.H. Lopes Da Silva",
+series = "Progress in Brain Research",
+publisher = "Elsevier",
+volume = "102",
+pages = "227 - 243",
+year = "1994",
+booktitle = "The Self-Organizing Brain: From Growth Cones to Functional Networks",
+issn = "0079-6123",
+url = {"http://www.sciencedirect.com/science/article/pii/S0079612308605439"},
+author = "Pasko Rakic and Jean-Pierre Bourgeois and Patricia S. Goldman-Rakic",
+}
+
+@article{CASEY2000241,
+title = "Structural and functional brain development and its relation to cognitive development",
+journal = "Biological Psychology",
+volume = "54",
+number = "1",
+pages = "241 - 257",
+year = "2000",
+issn = "0301-0511",
+url = {"http://www.sciencedirect.com/science/article/pii/S0301051100000582"},
+author = "B.J. Casey and Jay N. Giedd and Kathleen M. Thomas",
+}
+
+@ARTICLE{Dastin_2018,
+ author = {Dastin, Jeffrey},
+ year = {2018},
+ title = {Amazon scraps secret AI recruiting tool that showed bias against women},
+ journal = {Reuters},
+ url = {https://reut.rs/2p0ZWqe},
+ urldate = {2019-10-13}
+}
+
+@article{2017Andre,
+author = {Esteva, Andre and Kuprel, Brett and Novoa, Roberto and Ko, Justin and M Swetter, Susan and M Blau, Helen and Thrun, Sebastian},
+year = {2017},
+month = {01},
+pages = {},
+title = {Dermatologist-level classification of skin cancer with deep neural networks},
+volume = {542},
+journal = {Nature},
+doi = {10.1038/nature21056}
+}
+
+@article{Gruetzemacher20183DDL,
+  title={3D deep learning for detecting pulmonary nodules in CT scans},
+  author={Ross Gruetzemacher and Ashish Gupta and David B. Paradice},
+  journal={Journal of the American Medical Informatics Association : JAMIA},
+  year={2018},
+  volume={25 10},
+  pages={1301-1310}
+}
+
+@article{Leibig2017,
+author = {Leibig, Christian and Allken, Vaneeda and Ayhan, Murat Seckin and Berens, Philipp and Wahl, Siegfried},
+year = {2017},
+month = {12},
+pages = {},
+title = {Leveraging uncertainty information from deep neural networks for disease detection},
+volume = {7},
+journal = {Scientific Reports},
+doi = {10.1038/s41598-017-17876-z}
+}
+
+@article{2019Hongtao,
+title = "Automated pulmonary nodule detection in CT images using deep convolutional neural networks",
+journal = "Pattern Recognition",
+volume = "85",
+pages = "109 - 119",
+year = "2019",
+issn = "0031-3203",
+url = {http://www.sciencedirect.com/science/article/pii/S0031320318302711},
+author = "Hongtao Xie and Dongbao Yang and Nannan Sun and Zhineng Chen and Yongdong Zhang",}
+
+@article{Harwell_2019,
+ author = {Harwell, Drew},  
+ year = {2019},
+ title = {A face-scanning algorithm increasingly decides whether you deserve the job},
+ journal = {The Washington Post},
+ url = {https://wapo.st/2X3bupO},
+ urldate = {2019-03-12}
+}
+
+@article{tgale_shooker_2019,
+  author    = {Trevor Gale and
+               Erich Elsen and
+               Sara Hooker},
+  title     = {The State of Sparsity in Deep Neural Networks},
+  journal   = {CoRR},
+  volume    = {abs/1902.09574},
+  year      = {2019},
+  url       = {http://arxiv.org/abs/1902.09574},
+  archivePrefix = {arXiv},
+  eprint    = {1902.09574},
+  timestamp = {Tue, 21 May 2019 18:03:40 +0200},
+  biburl    = {https://dblp.org/rec/bib/journals/corr/abs-1902-09574},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
+}
+
+@ARTICLE{2017Telsa,
+       author = "NHTSA",
+        title = "Technical report, U.S. Department of Transportation, National Highway Traffic, Tesla Crash Preliminary Evaluation Report
+Safety Administration",
+      journal = "PE 16-007",
+         year = "2017",
+        month = "Jan",
+}
+
+@ARTICLE{2019Uber,
+       author = "NHTSA",
+        title = "Technical report, U.S. Department of Transportation,
+        Uber Crash Preliminary Evaluation Report",
+      journal = "HWY18MH010",
+         year = "2019",
+        month = "Nov",
+}
+
+@ARTICLE{2017Gurumoorthy,
+       author = {{Gurumoorthy}, Karthik S. and {Dhurandhar}, Amit and
+         {Cecchi}, Guillermo and {Aggarwal}, Charu},
+        title = {Efficient Data Representation by Selecting Prototypes with Importance Weights},
+      journal = {arXiv e-prints},
+     keywords = {Statistics - Machine Learning, Computer Science - Machine Learning, 65K05, 68W25},
+         year = "2017",
+        month = "Jul",
+          eid = {arXiv:1707.01212},
+        pages = {arXiv:1707.01212},
+archivePrefix = {arXiv},
+       eprint = {1707.01212},
+ primaryClass = {stat.ML},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2017arXiv170701212G},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+    
+@InProceedings{Caruana2000,
+author="Caruana, Rich",
+editor="Malmgren, Helge
+and Borga, Magnus
+and Niklasson, Lars",
+title="Case-Based Explanation for Artificial Neural Nets",
+booktitle="Artificial Neural Networks in Medicine and Biology",
+year="2000",
+publisher="Springer London",
+address="London",
+pages="303--308",
+isbn="978-1-4471-0513-8"
+}
+
+
+@inproceedings{Hooker2019ABF,
+  title={A Benchmark for Interpretability Methods in Deep Neural Networks},
+  author={Sara Hooker and Dumitru Erhan and Pieter-Jan Kindermans and Been Kim},
+  booktitle={NeurIPS 2019},
+  year={2019}
+}
+
+@article{2017Andre,
+author = {Esteva, Andre and Kuprel, Brett and Novoa, Roberto and Ko, Justin and M Swetter, Susan and M Blau, Helen and Thrun, Sebastian},
+year = {2017},
+month = {01},
+pages = {},
+title = {Dermatologist-level classification of skin cancer with deep neural networks},
+volume = {542},
+journal = {Nature},
+doi = {10.1038/nature21056}
+}
+
+
+@article{1954anderson_darling,
+  author = {Anderson, T and Darling, D},
+  journal = {The Annals of Mathematical Statistics},
+  number = 2,
+  pages = {193--212},
+  publisher = {Institute of Mathematical Statistics},
+  title = {Asymptotic Theory of Certain Goodness of Fit Criteria Based on Stochastic Processes},
+  url = {http://www.jstor.org/stable/2236446},
+  volume = {23},
+}
+
+@article{1999_philip,
+author = {Seeman, Philip},
+year = {1999},
+month = {02},
+pages = {168-168},
+title = {Brain development, X - Pruning during development},
+volume = {156},
+journal = {American Journal of Psychiatry}
+}
+
+
+</script> 
+
+<script language="javascript" type="text/javascript" src="lib/jquery-1.12.4.min.js"></script>
